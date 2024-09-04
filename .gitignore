@@ -22,7 +22,6 @@ media/
 # Compiled Python files
 *.py[cod]
 *$py.class
-
 # Distribution / packaging
 .Python
 build/

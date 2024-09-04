@@ -18,7 +18,10 @@ import ssl
 from decouple import config
 from decouple import config
 import certifi
+import dj_database_url
 import os
+
+
 os.environ['SSL_CERT_FILE'] = certifi.where()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -108,19 +111,14 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+BASE_DIR = Path(__file__).resolve().parent.parent
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST'),
-        'PORT': config('DB_PORT'),
-    }
+    'default': dj_database_url.parse("postgresql://homelife_a76w_user:JCXomkJPPb3fNUrYFeXLCWYo6iPXY6SP@dpg-crc8h6ogph6c738qcjig-a.oregon-postgres.render.com/homelife_a76w")
 }
+
+
+
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
 
