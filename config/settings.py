@@ -16,7 +16,7 @@ import smtplib
 from django.core.mail.backends.smtp import EmailBackend
 import ssl
 from decouple import config
-
+from decouple import config
 import certifi
 import os
 os.environ['SSL_CERT_FILE'] = certifi.where()
@@ -110,14 +110,15 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'homelife',
-        'USER': 'homeuser',
-        'PASSWORD': 'homelife2024',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': config('DB_NAME'),
+        'USER': config('DB_USER'),
+        'PASSWORD': config('DB_PASSWORD'),
+        'HOST': config('DB_HOST'),
+        'PORT': config('DB_PORT'),
     }
 }
 # Password validation
