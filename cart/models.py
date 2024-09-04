@@ -7,54 +7,33 @@ from django.dispatch import receiver
 from django.core.mail import send_mail
 from django.utils import timezone
 import pytz
+import uuid
 
 class Cart(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    ordered = models.BooleanField(default=False)
-    total_price = models.FloatField(default=0)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    creation_date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return str(self.user.first_name) + " " + str(self.total_price)
-
+        return f"Cart {self.id}"
 
 class CartItem(models.Model):
-    cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    price = models.FloatField(default=0)  # Хранит актуальную цену (с учетом промо, если она есть)
-    isOrder = models.BooleanField(default=False)
-    quantity = models.IntegerField(default=1)
-
-    def save(self, *args, **kwargs):
-        if self.product.promotion is not None:
-            self.price = self.product.promotion * self.quantity
-        else:
-            self.price = self.product.price * self.quantity
-        super(CartItem, self).save(*args, **kwargs)
+    id = models.BigAutoField(primary_key=True)
+    quantity = models.IntegerField(default=0)
+    cart = models.ForeignKey(Cart, related_name='items', on_delete=models.CASCADE, blank=True, null=True)
+    product = models.ForeignKey('product.Product', related_name='cartitems', on_delete=models.CASCADE, blank=True, null=True)
 
     def __str__(self):
-        return f"{self.user.first_name} {self.product.title}"
+        return f"CartItem {self.id} for Cart {self.cart.id}"
 
+class Order(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    total_price = models.DecimalField(decimal_places=2, max_digits=10)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    cart = models.OneToOneField(Cart, on_delete=models.CASCADE)
 
-
-# @receiver(pre_save, sender=CartItem)
-# def correct_price(sender, instance, **kwargs):
-#     product = instance.product
-#     quantity = instance.quantity
-#     price_of_product = float(product.price)
-#
-#     if instance.promotion is not None and instance.promotion > 0:
-#         # Применяем скидку, если она существует и больше нуля
-#         discount_percentage = instance.promotion
-#         discounted_price = price_of_product * (1 - discount_percentage / 100)
-#         instance.price = quantity * discounted_price
-#     else:
-#         # Без промоакции
-#         instance.price = quantity * price_of_product
-
-
-#order
-
+    def __str__(self):
+        return f"Order {self.id} for Cart {self.cart.id}"
 class PaymentMethod(models.Model):
     name = models.CharField(max_length=50)  # Например: "Card", "Cash", "Bank Transfer"
     description = models.TextField(blank=True, null=True)  # Дополнительное описание (по желанию)
@@ -81,15 +60,15 @@ class Order(models.Model):
         self.cart.save()
 
     def send_order_email(self):
-        order_time_utc = self.ordered_at  # или datetime.utcnow().replace(tzinfo=pytz.utc)
-        timezone = pytz.timezone('Asia/Bishkek')
-        order_time_local = order_time_utc.astimezone(timezone)
+        order_time_utc = self.ordered_at
+        timezone_bishkek = pytz.timezone('Asia/Bishkek')  # Избегаем конфликта с модулем `timezone`
+        order_time_local = order_time_utc.astimezone(timezone_bishkek)
         order_time_str = order_time_local.strftime('%Y-%m-%d %H:%M:%S')
 
         subject = 'Новый заказ!'
         message = f'Номер заказа: {self.id}\n' \
                   f'Email Пользователя: {self.user.email}\n' \
-                  f'Имя пользователя: {self.user.first_name}, {self.user.last_name}\n' \
+                  f'Имя пользователя: {self.user.first_name} {self.user.last_name}\n' \
                   f'Номер телефона пользователя: {self.user.number}\n' \
                   f'Адрес: {self.address}\n' \
                   f'Способ оплаты: {self.payment_method.name if self.payment_method else "Не указан"}\n' \
@@ -110,7 +89,7 @@ class Order(models.Model):
                            f'Бренд: {item.product.brand}\n' \
                            f'Количество: {item.quantity}\n' \
                            f'Цена за 1 товар: {item.price / item.quantity}\n' \
-                           f'Цена за все товары: {item.price}\n\n' \
+                           f'Цена за все товары: {item.price}\n\n'
 
         admin_email = 'homelife.site.kg@gmail.com'
         send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [admin_email])

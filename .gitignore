@@ -5,8 +5,10 @@
 __pycache__/
 media/
 
-db.sqlite3
-
+# PostgreSQL files
+*.pgdata
+*.pgsql
+*.pgpass
 
 # PyCharm
 .idea/
@@ -95,10 +97,3 @@ celerybeat-schedule
 
 # sftp configuration file
 sftp-config.json
-
-# Package control specific files Package
-Control.last-run
-Control.ca-list
-Control.ca-bundle
-Control.system-ca-bundle
-GitHub.sublime-settings
