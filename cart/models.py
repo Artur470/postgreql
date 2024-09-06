@@ -1,17 +1,17 @@
 from django.db import models
-from django.contrib.auth.models import User
-from product.models import Product
 from django.conf import settings
-from django.db.models.signals import pre_save, post_save
-from django.dispatch import receiver
 from django.core.mail import send_mail
 from django.utils import timezone
 import pytz
 import uuid
+from decimal import Decimal
 
 class Cart(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     creation_date = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    ordered = models.BooleanField(default=False)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
 
     def __str__(self):
         return f"Cart {self.id}"
@@ -25,22 +25,12 @@ class CartItem(models.Model):
     def __str__(self):
         return f"CartItem {self.id} for Cart {self.cart.id}"
 
-class Order(models.Model):
-    id = models.BigAutoField(primary_key=True)
-    total_price = models.DecimalField(decimal_places=2, max_digits=10)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    cart = models.OneToOneField(Cart, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f"Order {self.id} for Cart {self.cart.id}"
 class PaymentMethod(models.Model):
     name = models.CharField(max_length=50)  # Например: "Card", "Cash", "Bank Transfer"
     description = models.TextField(blank=True, null=True)  # Дополнительное описание (по желанию)
 
     def __str__(self):
         return self.name
-
 
 class Order(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
